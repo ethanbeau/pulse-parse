@@ -1,0 +1,13 @@
+[package]
+name = "health-store"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.44"
+csv = "1.4.0"
+health-core = { path = "../health-core" }
+quick-xml = "0.39.2"
+rusqlite = { version = "0.39.0", features = ["bundled"] }
+serde_json = "1.0"
+tempfile = "3.27.0"

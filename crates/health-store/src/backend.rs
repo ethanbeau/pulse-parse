@@ -1031,9 +1031,6 @@ fn enrich_summary_rows_with_workout_metadata(
         .collect();
     let metadata_by_workout = fetch_workout_metadata_by_ids(connection, &workout_ids)?;
     for row in summary_rows {
-        if object_get_str(row, "activity_type") != Some(RUNNING_ACTIVITY_TYPE) {
-            continue;
-        }
         let workout_id = object_get_i64(row, "id").unwrap_or_default();
         let metadata = metadata_by_workout
             .get(&workout_id)
@@ -3558,12 +3555,12 @@ fn derive_workout_metrics(
                 }),
             );
         }
-        if let Some(elevation_gain_ft) = extract_workout_elevation_gain_ft(metadata) {
-            metrics.insert("elevation_gain_ft".into(), json!(elevation_gain_ft));
-        }
-        if let Some(temperature_f) = extract_workout_temperature_f(metadata) {
-            metrics.insert("temperature_f".into(), json!(temperature_f));
-        }
+    }
+    if let Some(elevation_gain_ft) = extract_workout_elevation_gain_ft(metadata) {
+        metrics.insert("elevation_gain_ft".into(), json!(elevation_gain_ft));
+    }
+    if let Some(temperature_f) = extract_workout_temperature_f(metadata) {
+        metrics.insert("temperature_f".into(), json!(temperature_f));
     }
     metrics
 }
@@ -4053,10 +4050,23 @@ where
     Ok(())
 }
 
+fn build_summary_stem(bundle: &Value) -> String {
+    if let Some(breakdown) = bundle.get("activity_breakdown").and_then(Value::as_array) {
+        if breakdown.len() == 1 {
+            if let Some(workout_type) = breakdown[0].as_object().and_then(|obj| object_get_str(obj, "type")) {
+                let safe_type = workout_type.replace(" ", "-").to_lowercase();
+                return format!("workouts-summary-{safe_type}");
+            }
+        }
+    }
+    "workouts-summary".to_string()
+}
+
 fn build_csv_export_filenames(csv_profile: &str, bundle: &Value) -> HashMap<&'static str, String> {
     let suffix = build_export_date_range_label(bundle);
     if csv_profile == "llm" {
-        return HashMap::from([("workouts_llm", format!("workouts-llm-{suffix}.csv"))]);
+        let stem = build_summary_stem(bundle);
+        return HashMap::from([("workouts_llm", format!("{stem}-{suffix}.csv"))]);
     }
     HashMap::from([
         ("workouts", format!("workouts-{suffix}.csv")),
@@ -4073,9 +4083,9 @@ fn build_csv_export_filenames(csv_profile: &str, bundle: &Value) -> HashMap<&'st
 
 fn build_json_export_filename(summary: bool, bundle: &Value) -> String {
     let stem = if summary {
-        "workouts-summary"
+        build_summary_stem(bundle)
     } else {
-        "workouts"
+        "workouts".to_string()
     };
     format!("{stem}-{}.json", build_export_date_range_label(bundle))
 }

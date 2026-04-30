@@ -1095,7 +1095,7 @@ mod tests {
             },
         )
         .unwrap();
-        let csv_path = csv_dir.join("workouts-llm-2024-01-05_to_2024-01-05.csv");
+        let csv_path = csv_dir.join("workouts-summary-running-2024-01-05_to_2024-01-05.csv");
         let mut reader = csv::Reader::from_path(&csv_path).unwrap();
         let headers = reader.headers().unwrap().clone();
         let rows: Vec<csv::StringRecord> = reader.records().collect::<Result<_, _>>().unwrap();
